@@ -1,0 +1,6 @@
+# sources:
+#   - name: health_app
+#     database: raw
+#     schema: health_app
+#     description: a copy of source database of health_app app
+#     tables:
