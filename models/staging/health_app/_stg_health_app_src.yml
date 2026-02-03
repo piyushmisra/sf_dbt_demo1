@@ -1,0 +1,16 @@
+models:
+  - name: stg_seed__meds
+    description: Medicine master as CRUD by the application system
+    columns:
+      - name: id
+        description: unique ID of the medicine
+        data_type: number
+        data_tests:
+          - unique
+      - name: med_name
+        description: medicine name
+        data_type: varchar
+        data_tests:
+          - not_null
+  - name: stg_seed___patients
+    description: list of Patients directly copied from the source application
