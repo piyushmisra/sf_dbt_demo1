@@ -18,7 +18,13 @@ clean-targets:         # directories to be removed by `dbt clean`
 
 
 models:
-  sf_dbt_demo1: {}
+  sf_dbt_demo1:
+    staging:
+      health_app:
+        +materialized: view
+    marts:
+      +materialized: table
+
 
 seeds:
   sf_dbt_demo1:

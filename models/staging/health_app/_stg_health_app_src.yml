@@ -12,5 +12,5 @@ models:
         data_type: varchar
         data_tests:
           - not_null
-  - name: stg_seed___patients
+  - name: stg_seed__patients
     description: list of Patients directly copied from the source application

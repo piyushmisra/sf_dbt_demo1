@@ -1,0 +1,10 @@
+models:
+  - name: dim_patients
+    columns:
+      - name: patient_sk
+        tests: [unique, not_null]
+      - name: natural_key
+        tests: [not_null]
+      - name: is_current
+      - name: valid_from
+      - name: valid_to
