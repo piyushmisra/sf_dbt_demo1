@@ -1,43 +1,32 @@
 version: 2
 
 models:
-  - name: dim_patients
-    description: "Slowly Changing Dimension Type 2 table for patient attributes."
-
+  - name: dim_patients_scd2
+    description: "SCD2 history table for patients with counters for debugging."
     columns:
       - name: patient_sk
-        description: "Surrogate key for the patient dimension, generated as abs(hash(natural_key, valid_from))."
         tests:
           - not_null
           - unique
 
       - name: natural_key
-        description: "Business key from the source system (patient ID)."
         tests:
           - not_null
 
-      - name: first_name
-        description: "Patient's first name."
-
-      - name: last_name
-        description: "Patient's last name."
-
       - name: scd_hash
-        description: "Hash of natural_key + attributes used to detect changes."
         tests:
           - not_null
 
       - name: valid_from
-        description: "Timestamp when this version of the record became active."
         tests:
           - not_null
 
-      - name: valid_to
-        description: "Timestamp when this version expired. Null means the record is current."
-
       - name: is_current
-        description: "Boolean flag indicating whether this is the active version of the record."
         tests:
           - not_null
           - accepted_values:
-              values: [true, false]
+              arguments:
+                values: [true, false]
+
+  - name: dim_patients
+    description: "Thin view on top of dim_patients_scd2."
