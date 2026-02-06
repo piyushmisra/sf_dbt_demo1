@@ -4,6 +4,9 @@
     unique_key = 'natural_key'
 ) }}
 
+--------todo: deletes rows if there are >2 to close!
+--------todo: logging recsDel, recIns, recUpd etc
+
 -- 1. Source snapshot
 with source as (
     select
