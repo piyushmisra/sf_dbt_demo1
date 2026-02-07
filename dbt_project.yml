@@ -3,7 +3,7 @@ name: 'sf_dbt_demo1'
 version: '1.0.0'
 
 # This setting configures which "profile" dbt uses for this project.
-profile: 'sf_dbt_demo1'
+profile: 'snowflake'
 
 model-paths: ["models"]
 analysis-paths: ["analyses"]
