@@ -25,7 +25,6 @@ models:
         tests:
           - not_null
           - accepted_values:
-              arguments:
                 values: [true, false]
 
   - name: dim_patients
