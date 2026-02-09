@@ -112,10 +112,12 @@ jobs:
               cs.execute(f"alter git repository {os.environ['SNOWFLAKE_GIT_REPO_NAME']} fetch;")
 
               # 2. Run dbt build inside Snowflake Native dbt
-              cs.execute(
-                  f\"execute dbt project {os.environ['DBT_PROJECT_NAME']} "
-                  f"args='build --target {os.environ['DBT_TARGET']}'\"
+              sql = (
+                  f"execute dbt project {os.environ['DBT_PROJECT_NAME']} "
+                  f"args='build --target {os.environ['DBT_TARGET']}'"
               )
+              cs.execute(sql)
+
           finally:
               cs.close()
               conn.close()
