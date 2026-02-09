@@ -10,17 +10,15 @@ env:
   DBT_PROJECT_NAME: SF_DBT_DEMO1
   DBT_TARGET: prod
 
-  # Your Snowflake account details
+  # Snowflake account details (non-secret)
   SNOWFLAKE_ACCOUNT: dm73600.australia-east.azure
-  SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
-  SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
   SNOWFLAKE_ROLE: ACCOUNTADMIN
   SNOWFLAKE_WAREHOUSE: COMPUTE_WH
   SNOWFLAKE_DB: ANALYTICS_DEV
   SNOWFLAKE_SCHEMA: DEV_PIYUSH
   SNOWFLAKE_AUTHENTICATOR: SNOWFLAKE
 
-  # Your Snowflake Git repo object
+  # Snowflake Git repo object
   SNOWFLAKE_GIT_REPO_NAME: SF_DBT_DEMO1_REPO
   SNOWFLAKE_GIT_BRANCH: main
 
@@ -56,6 +54,9 @@ jobs:
 
       - name: dbt test
         run: dbt test --profiles-dir . --target $DBT_TARGET
+        env:
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
 
 
   # ============================
@@ -79,9 +80,15 @@ jobs:
 
       - name: dbt deps
         run: dbt deps --profiles-dir .
+        env:
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
 
       - name: dbt compile
         run: dbt compile --profiles-dir . --target $DBT_TARGET
+        env:
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
 
       - name: Deploy to Snowflake
         run: |
@@ -113,3 +120,6 @@ jobs:
               cs.close()
               conn.close()
           EOF
+        env:
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
