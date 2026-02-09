@@ -1,0 +1,115 @@
+name: dbt CI/CD
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+env:
+  DBT_PROJECT_NAME: SF_DBT_DEMO1
+  DBT_TARGET: prod
+
+  # Your Snowflake account details
+  SNOWFLAKE_ACCOUNT: dm73600.australia-east.azure
+  SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+  SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
+  SNOWFLAKE_ROLE: ACCOUNTADMIN
+  SNOWFLAKE_WAREHOUSE: COMPUTE_WH
+  SNOWFLAKE_DB: ANALYTICS_DEV
+  SNOWFLAKE_SCHEMA: DEV_PIYUSH
+  SNOWFLAKE_AUTHENTICATOR: SNOWFLAKE
+
+  # Your Snowflake Git repo object
+  SNOWFLAKE_GIT_REPO_NAME: SF_DBT_DEMO1_REPO
+  SNOWFLAKE_GIT_BRANCH: main
+
+jobs:
+
+  # ============================
+  # 1. CI — PR Validation
+  # ============================
+  ci:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dbt + sqlfluff
+        run: |
+          pip install --upgrade pip
+          pip install dbt-core dbt-snowflake sqlfluff
+
+      - name: SQLFluff lint
+        run: sqlfluff lint models
+
+      - name: dbt deps
+        run: dbt deps
+
+      - name: dbt compile
+        run: dbt compile --target $DBT_TARGET
+
+      - name: dbt test
+        run: dbt test --target $DBT_TARGET
+
+
+  # ============================
+  # 2. CD — Deploy on merge to main
+  # ============================
+  cd:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dbt + Snowflake connector
+        run: |
+          pip install --upgrade pip
+          pip install dbt-core dbt-snowflake snowflake-connector-python
+
+      - name: dbt deps
+        run: dbt deps
+
+      - name: dbt compile
+        run: dbt compile --target $DBT_TARGET
+
+      - name: Deploy to Snowflake
+        run: |
+          python << 'EOF'
+          import os
+          import snowflake.connector
+
+          conn = snowflake.connector.connect(
+              account=os.environ['SNOWFLAKE_ACCOUNT'],
+              user=os.environ['SNOWFLAKE_USER'],
+              password=os.environ['SNOWFLAKE_PASSWORD'],
+              role=os.environ['SNOWFLAKE_ROLE'],
+              warehouse=os.environ['SNOWFLAKE_WAREHOUSE'],
+              database=os.environ['SNOWFLAKE_DB'],
+              schema=os.environ['SNOWFLAKE_SCHEMA'],
+              authenticator=os.environ['SNOWFLAKE_AUTHENTICATOR']
+          )
+          cs = conn.cursor()
+          try:
+              # 1. Pull latest Git commit into Snowflake Git repo
+              cs.execute(f"alter git repository {os.environ['SNOWFLAKE_GIT_REPO_NAME']} fetch;")
+
+              # 2. Run dbt build inside Snowflake Native dbt
+              cs.execute(
+                  f\"execute dbt project {os.environ['DBT_PROJECT_NAME']} "
+                  f"args='build --target {os.environ['DBT_TARGET']}'\"
+              )
+          finally:
+              cs.close()
+              conn.close()
+          EOF

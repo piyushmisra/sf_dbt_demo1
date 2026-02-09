@@ -80,5 +80,5 @@ CREATE OR REPLACE EXTERNAL ACCESS INTEGRATION dbt_ext_access
   COMMENT = 'JungleBook dbt workspace'; -->
 
 IMPORTANT NOTE: your dbt_project.yml must have 
-profile: snowflake
+  profile: snowflake
 
