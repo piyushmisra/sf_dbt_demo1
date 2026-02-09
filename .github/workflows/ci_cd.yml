@@ -49,13 +49,13 @@ jobs:
         run: sqlfluff lint models
 
       - name: dbt deps
-        run: dbt deps
+        run: dbt deps --profiles-dir .
 
       - name: dbt compile
-        run: dbt compile --target $DBT_TARGET
+        run: dbt compile --profiles-dir . --target $DBT_TARGET
 
       - name: dbt test
-        run: dbt test --target $DBT_TARGET
+        run: dbt test --profiles-dir . --target $DBT_TARGET
 
 
   # ============================
@@ -78,10 +78,10 @@ jobs:
           pip install dbt-core dbt-snowflake snowflake-connector-python
 
       - name: dbt deps
-        run: dbt deps
+        run: dbt deps --profiles-dir .
 
       - name: dbt compile
-        run: dbt compile --target $DBT_TARGET
+        run: dbt compile --profiles-dir . --target $DBT_TARGET
 
       - name: Deploy to Snowflake
         run: |
