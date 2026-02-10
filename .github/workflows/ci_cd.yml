@@ -116,8 +116,8 @@ jobs:
               # 2. Run dbt build inside Snowflake Native dbt
               # Note: We use the full name here from the env block
               sql = (
-                  f"EXECUTE DBT COMMAND 'build' "
-                  f"ON PROJECT {os.environ['DBT_PROJECT_NAME']} "
+                  f"EXECUTE DBT PROJECT {os.environ['DBT_PROJECT_NAME']} "
+                  f"args='build --target {os.environ['DBT_TARGET']}'"
               )
               cs.execute(sql)
 
