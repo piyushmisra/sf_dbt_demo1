@@ -42,13 +42,18 @@ CREATE DATABASE DBT_WORKSPACES;
 USE DATABASE DBT_WORKSPACES;
 CREATE SCHEMA DBT_WORKSPACES.WORKSPACE_DEV;
 SHOW INTEGRATIONS;
--- drop integration GIT_INTEGRATION;
-CREATE OR REPLACE API INTEGRATION git_integration
+<!-- drop integration GIT_INTEGRATION; -->
+<!-- WAIT: API Integrations need to be created ONLY for 
+  GitHub Enterprise Server
+  Azure DevOps Server
+  Private Git repos that require OAuth or custom auth
+ -->
+<!-- CREATE OR REPLACE API INTEGRATION git_integration
   API_PROVIDER = git_https_api
   API_ALLOWED_PREFIXES = ('https://github.com/piyushmisra')
   <!-- -- Comment out the following line if your forked repository is public -->
-  <!-- ALLOWED_AUTHENTICATION_SECRETS = (tasty_bytes_dbt_db.integrations.tb_dbt_git_secret) -->
-  ENABLED = TRUE;
+  <!-- ALLOWED_AUTHENTICATION_SECRETS = (tasty_bytes_dbt_db.integrations.tb_dbt_git_secret)
+  ENABLED = TRUE; -->
 
 <!-- You must Create an external access integration in Snowflake for dbt dependencies -->
 <!-- WAIT: for Trial accounts, it cannot be done. So just remove gitignore for dbt_packages -->
@@ -79,6 +84,164 @@ CREATE OR REPLACE EXTERNAL ACCESS INTEGRATION dbt_ext_access
   WAREHOUSE = compute_wh
   COMMENT = 'JungleBook dbt workspace'; -->
 
+<!-- You need Snowflake Git Repository objects and dbt Projects - BOTH are schema‑level objects. -->
+<!-- So create a Repo in Snowflake which is connected to the GitHub account as below -->
+USE ROLE ACCOUNTADMIN;
+USE DATABASE ANALYTICS_DEV;
+USE SCHEMA DEV_PIYUSH;
+
+CREATE OR REPLACE GIT REPOSITORY SF_DBT_DEMO1_REPO
+  URL = 'https://github.com/piyushmisra/sf_dbt_demo1.git'
+  BRANCH = 'main';
+  <!-- ......and now link this repo object to Snowflake dbt project -->
+ALTER DBT PROJECT SF_DBT_DEMO1
+  SET GIT_REPOSITORY = SF_DBT_DEMO1_REPO;
+
+
+
 IMPORTANT NOTE: your dbt_project.yml must have 
   profile: snowflake
 
+
+
+
+----------prompt------------------
+I want to bring my public dbt repo https://github.com/piyushmisra/sf_dbt_demo1 into trial ver of snowflake https://app.snowflake.com/bvmpgjz/ub87138/#/workspaces/ws/USER%24/PUBLIC/DEFAULT%24/Untitled.sql. follow best practices that enterprise grade pro's use - eg create separate dbt_workspaces.workspace_dev db.schema for dbt project, and analytics_dev for data.
+my sf account username passwd is stored in github repo secrets in SNOWFLAKE_USER and SNOWFLAKE_PASSWORD
+
+my current dbt_project.yml is
+
+name: 'sf_dbt_demo1'
+version: '1.0.0'
+
+# This setting configures which "profile" dbt uses for this project.
+profile: 'snowflake'
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+clean-targets:         # directories to be removed by `dbt clean`
+  - "target"
+  - "dbt_packages"
+
+
+models:
+  sf_dbt_demo1:
+    staging:
+      health_app:
+        +materialized: view
+    marts:
+      +materialized: table
+
+
+seeds:
+  sf_dbt_demo1:
+    +database: RAW
+    +schema: HEALTH_APP_SRC
+
+I have only main branch in github. my dbt_packages are checkin the repo from my local. my profile.yml is
+snowflake:
+  target: prod
+  outputs:
+    prod:
+      type: snowflake
+      account: "{{ env_var('SNOWFLAKE_ACCOUNT') }}"
+      user: "{{ env_var('SNOWFLAKE_USER') }}"
+      password: "{{ env_var('SNOWFLAKE_PASSWORD') }}"
+      role: "{{ env_var('SNOWFLAKE_ROLE') }}"
+      warehouse: "{{ env_var('SNOWFLAKE_WAREHOUSE') }}"
+      database: "{{ env_var('SNOWFLAKE_DB') }}"
+      schema: "{{ env_var('SNOWFLAKE_SCHEMA') }}"
+      authenticator: "{{ env_var('SNOWFLAKE_AUTHENTICATOR') }}"
+
+  -------------------------------end prompt
+create database if not exists DBT_WORKSPACES;
+create schema if not exists DBT_WORKSPACES.WORKSPACE_DEV;
+
+create database if not exists RAW;
+create schema if not exists RAW.HEALTH_APP_SRC;
+
+create database if not exists ANALYTICS_DEV;
+create schema if not exists ANALYTICS_DEV.DEV_PIYUSH;
+
+create database if not exists ANALYTICS_PROD;
+create schema if not exists ANALYTICS_PROD.PROD;
+----- then for set up of dbt proj creation and git integration:
+SET GITHUB_ORIGIN = 'https://github.com/piyushmisra/sf_dbt_demo1.git';
+SET GIT_INTEGRATION_NAME = 'GIT_INTEGRATION';
+SET GIT_REPO_NAME = 'SF_DBT_DEMO1_REPO';
+SET DBT_PROJECT_NAME = 'SF_DBT_DEMO1';
+
+-- Where to store dbt project objects
+SET DBT_PROJECT_DB = 'ANALYTICS_DEV';
+SET DBT_PROJECT_SCHEMA = 'DBT_PROJECTS';
+
+-- Where to put dbt compiled models/testing
+SET DBT_TARGET_DB = 'ANALYTICS_DEV';
+SET DBT_TARGET_SCHEMA = 'DEV_PIYUSH';
+
+-- Your user name (for grants)
+SET DBT_USER = CURRENT_USER();
+-----
+CREATE OR REPLACE API INTEGRATION IDENTIFIER($GIT_INTEGRATION_NAME)
+  API_PROVIDER = git_https_api
+  API_ALLOWED_PREFIXES = ( $GITHUB_ORIGIN )
+  ENABLED = TRUE;
+
+-=-=-=-=-=
+CREATE OR REPLACE GIT REPOSITORY SF_DBT_DEMO1_REPO
+  API_INTEGRATION = GIT_INTEGRATION
+  ORIGIN = 'https://github.com/piyushmisra/sf_dbt_demo1.git';
+
+ALTER GIT REPOSITORY IDENTIFIER($GIT_REPO_NAME) FETCH;
+-=-=-=-=-=
+-- Create the dbt project definition
+CREATE OR REPLACE DBT PROJECT IDENTIFIER($DBT_PROJECT_NAME)
+  GIT_REPOSITORY = IDENTIFIER($GIT_REPO_NAME)
+  GIT_BRANCH = 'main'
+  -- This points to the folder containing your dbt_project.yml
+  MAIN_FILE_PATH = '/' 
+  -- Enterprise practice: Store metadata in a dedicated schema
+  QUERY_WAREHOUSE = $SNOWFLAKE_WAREHOUSE;
+-=-=-=-=-=
+CREATE OR REPLACE DBT PROJECT
+  IDENTIFIER($DBT_PROJECT_DB, $DBT_PROJECT_SCHEMA, $DBT_PROJECT_NAME)
+FROM '@'
+  || IDENTIFIER($DBT_PROJECT_DB, $DBT_PROJECT_SCHEMA, $GIT_REPO_NAME)
+  || '/branches/main'
+DEFAULT_TARGET = 'dev'
+COMMENT = 'dbt project object for sf_dbt_demo1'
+;
+ALTER DBT PROJECT
+  IDENTIFIER($DBT_PROJECT_DB, $DBT_PROJECT_SCHEMA, $DBT_PROJECT_NAME)
+ADD VERSION
+FROM '@'
+  || IDENTIFIER($DBT_PROJECT_DB, $DBT_PROJECT_SCHEMA, $GIT_REPO_NAME)
+  || '/branches/main'
+;
+EXECUTE DBT PROJECT
+  IDENTIFIER($DBT_PROJECT_DB, $DBT_PROJECT_SCHEMA, $DBT_PROJECT_NAME)
+  ARGS = 'run --target dev';
+
+------
+Versioning workflow
+
+Every time you merge to main in GitHub:
+
+Run:
+
+ALTER GIT REPOSITORY ... FETCH;
+
+
+Then:
+
+ALTER DBT PROJECT ... ADD VERSION FROM '.../branches/main';
+
+
+Then run:
+
+EXECUTE DBT PROJECT ... ARGS = 'run --target dev';
