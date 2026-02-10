@@ -214,6 +214,20 @@ FROM '@'
 EXECUTE DBT PROJECT
   IDENTIFIER($DBT_PROJECT_DB, $DBT_PROJECT_SCHEMA, $DBT_PROJECT_NAME)
   ARGS = 'run --target dev';
+----------
+
+USE ROLE ACCOUNTADMIN;
+USE DATABASE DBT_WORKSPACES;
+USE SCHEMA WORKSPACE_DEV;
+
+-- 1. Refresh the Git Repo to pull your latest 'DUMMY' profile fix
+ALTER GIT REPOSITORY SF_DBT_DEMO1_REPO FETCH;
+
+-- 2. Create the Project Object
+-- This will work now because the 'DUMMY' values satisfy the parser
+CREATE OR REPLACE DBT PROJECT SF_DBT_DEMO1
+  FROM '@DBT_WORKSPACES.WORKSPACE_DEV.SF_DBT_DEMO1_REPO/branches/main/';
+  QUERY_WAREHOUSE = 'COMPUTE_WH';
 
 ------
 Versioning workflow
