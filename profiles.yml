@@ -3,15 +3,15 @@ snowflake:
   outputs:
     prod:
       type: snowflake
-      account: "{{ env_var('SNOWFLAKE_ACCOUNT'), '' }}"
-      user: "{{ env_var('SNOWFLAKE_USER'), '' }}"
-      password: "{{ env_var('SNOWFLAKE_PASSWORD'), '' }}"
-      role: "{{ env_var('SNOWFLAKE_ROLE'), 'ACCOUNTADMIN' }}"
-      warehouse: "{{ env_var('SNOWFLAKE_WAREHOUSE'), 'COMPUTE_WH' }}"
-      database: "{{ env_var('SNOWFLAKE_DB'), 'ANALYTICS_DEV' }}"
-      schema: "{{ env_var('SNOWFLAKE_SCHEMA'), 'DEV_PIYUSH' }}"
-      authenticator: "{{ env_var('SNOWFLAKE_AUTHENTICATOR') }}"
-
+      # Use single quotes for the outer Jinja and double quotes for the inner strings
+      account: "{{ env_var('SNOWFLAKE_ACCOUNT', '') | string }}"
+      user: "{{ env_var('SNOWFLAKE_USER', '') | string }}"
+      password: "{{ env_var('SNOWFLAKE_PASSWORD', '') | string }}"
+      role: "{{ env_var('SNOWFLAKE_ROLE', 'ACCOUNTADMIN') | string }}"
+      warehouse: "{{ env_var('SNOWFLAKE_WAREHOUSE', 'COMPUTE_WH') | string }}"
+      database: "{{ env_var('SNOWFLAKE_DB', 'ANALYTICS_DEV') | string }}"
+      schema: "{{ env_var('SNOWFLAKE_SCHEMA', 'DEV_PIYUSH') | string }}"
+      authenticator: snowflake
 
 # snowflake:
 #   target: prod
