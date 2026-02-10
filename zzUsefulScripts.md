@@ -229,6 +229,10 @@ CREATE OR REPLACE DBT PROJECT SF_DBT_DEMO1
   FROM '@DBT_WORKSPACES.WORKSPACE_DEV.SF_DBT_DEMO1_REPO/branches/main/';
   QUERY_WAREHOUSE = 'COMPUTE_WH';
 
+-- create Seeds - else the ci-cd will fail
+EXECUTE DBT PROJECT DBT_WORKSPACES.WORKSPACE_DEV.SF_DBT_DEMO1 args='seed';
+
+
 ------
 Versioning workflow
 
