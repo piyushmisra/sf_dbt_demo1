@@ -3,16 +3,17 @@ snowflake:
   outputs:
     prod:
       type: snowflake
-      # Use single quotes for the outer Jinja and double quotes for the inner strings
+      # Fallbacks ('') allow the PROJECT to be created in SF
       account: "{{ env_var('SNOWFLAKE_ACCOUNT', '') | string }}"
       user: "{{ env_var('SNOWFLAKE_USER', '') | string }}"
       password: "{{ env_var('SNOWFLAKE_PASSWORD', '') | string }}"
       role: "{{ env_var('SNOWFLAKE_ROLE', 'ACCOUNTADMIN') | string }}"
       warehouse: "{{ env_var('SNOWFLAKE_WAREHOUSE', 'COMPUTE_WH') | string }}"
-      database: "{{ env_var('SNOWFLAKE_DB', 'ANALYTICS_DEV') | string }}"
-      schema: "{{ env_var('SNOWFLAKE_SCHEMA', 'DEV_PIYUSH') | string }}"
+      # HARDCODED DATA DESTINATION (Enterprise Best Practice for Dev/Prod profiles)
+      database: "ANALYTICS_DEV"
+      schema: "DEV_PIYUSH"
       authenticator: snowflake
-
+  
 # snowflake:
 #   target: prod
 #   outputs:
